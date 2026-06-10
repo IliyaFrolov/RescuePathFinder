@@ -373,10 +373,12 @@ def make_app(csv_path: str, args) -> dash.Dash:
         # Plotly Dash doesn't expose extendData easily for 3-D colour lines,
         # so we replace the data arrays — still fast because no layout redraw.
         fig = go.Figure(current_fig)
-        fig.data[0].x = state.xs
-        fig.data[0].y = state.ys
-        fig.data[0].z = state.zs
-        fig.data[0].line.color = state.cs
+        fig.data[0].update(
+            x=state.xs,
+            y=state.ys,
+            z=state.zs,
+            line=dict(color=state.cs),
+        )
 
         # Keep the camera angle the user has set
         if current_fig and current_fig.get("layout", {}).get("scene"):
