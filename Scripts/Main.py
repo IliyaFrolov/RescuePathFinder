@@ -90,21 +90,4 @@ if __name__ == "__main__":
         print(f"Error: {e}")
     
 
-# 1. Your custom, offline list of latitude/longitude waypoints
-# Format: { waypoint_id: (latitude, longitude) }
-# waypoints = {
-#     "Basecamp": (34.0522, -118.2437),
-#     "Waypoint_1": (34.0530, -118.2500),
-#     "Waypoint_2": (34.0600, -118.2400),
-#     "Destination": (34.0650, -118.2550)
-# }
-
-# # 5. Define valid paths (edges) between your waypoints and add weights
-# # (Only connect nodes that actually have a physical path or line-of-sight between them)
-# valid_connections = [
-#     ("Basecamp", "Waypoint_1"),
-#     ("Basecamp", "Waypoint_2"),
-#     ("Waypoint_1", "Destination"),
-#     ("Waypoint_2", "Destination")
-# ]
 
