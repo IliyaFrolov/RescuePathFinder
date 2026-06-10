@@ -1,34 +1,119 @@
-/*
-  Blink
+#include <Wire.h>
+#include <DHT.h>
 
-  Turns an LED on for one second, then off for one second, repeatedly.
+// MPU6050 Configuration
+double accx, accy, accz, gyrox, gyroy, gyroz, temp;
+const int Mpu = 0x68;
 
-  Most Arduinos have an on-board LED you can control. On the UNO, MEGA and ZERO
-  it is attached to digital pin 13, on MKR1000 on pin 6. LED_BUILTIN is set to
-  the correct LED pin independent of which board is used.
-  If you want to know what pin the on-board LED is connected to on your Arduino
-  model, check the Technical Specs of your board at:
-  https://docs.arduino.cc/hardware/
+// DHT Sensor Configuration
+#define BUZZER 12
+#define DHTPIN 13
+#define DHTTYPE DHT11 // Change to DHT22 if you are using a DHT22 sensor
+DHT dht(DHTPIN, DHTTYPE);
 
-  modified 8 May 2014
-  by Scott Fitzgerald
-  modified 2 Sep 2016
-  by Arturo Guadalupi
-  modified 8 Sep 2016
-  by Colby Newman
-
-  This example code is in the public domain.
-
-  https://docs.arduino.cc/built-in-examples/basics/Blink/
-*/
-
-// the setup function runs once when you press reset or power the board
 void setup() {
-  // initialize digital pin LED_BUILTIN as an output.
-  blinkSetup();
+  pinMode(LED_BUILTIN, OUTPUT);
+  
+  // Initialize I2C for MPU6050
+  Wire.begin();
+  Wire.setClock(400000);
+  delay(100);
+  
+  // Turn MPU on
+  Wire.beginTransmission(Mpu);
+  Wire.write(0x6B);
+  Wire.write(0);
+  Wire.endTransmission();
+  delay(100);
+
+  // Configure Gyro
+  Wire.beginTransmission(Mpu);
+  Wire.write(0x1B);
+  Wire.write(0x00);
+  Wire.endTransmission();
+  delay(100);
+
+  // Configure Accelerometer
+  Wire.beginTransmission(Mpu);
+  Wire.write(0x1C);
+  Wire.write(0x00);
+  Wire.endTransmission();
+  delay(100);
+  
+  // Initialize DHT Sensor
+  dht.begin();
+  delay(100);
+  
+  // Initialize Serial
+  Serial.begin(115200);
+  delay(100);
 }
 
-// the loop function runs over and over again forever
-void loop() {                     // wait for a second
-  blinkLoop();
+void loop() {
+  readIMU();
+  printDataCSV();
+  delay(100);
+}
+
+// Reads Data from IMU
+void readIMU() {
+  Wire.beginTransmission(Mpu);
+  Wire.write(0x3B);
+  Wire.endTransmission();
+  Wire.requestFrom(Mpu, 14);
+  
+  accx = (int16_t)(Wire.read() << 8 | Wire.read()) / 16384.00; // g
+  accy = (int16_t)(Wire.read() << 8 | Wire.read()) / 16384.00; // g
+  accz = (int16_t)(Wire.read() << 8 | Wire.read()) / 16384.00; // g
+  temp = (int16_t)(Wire.read() << 8 | Wire.read()) / 340.00 + 36.53; // Celsius (MPU Internal)
+  gyrox = (int16_t)(Wire.read() << 8 | Wire.read()) / 131.00; // Dps
+  gyroy = (int16_t)(Wire.read() << 8 | Wire.read()) / 131.00; // Dps
+  gyroz = (int16_t)(Wire.read() << 8 | Wire.read()) / 131.00; // Dps
+}
+
+// Prints a concise CSV list of the data stream
+// OUTPUT SCHEMA: 
+// accx, accy, accz, mpu_temp, gyrox, gyroy, gyroz, dht_humidity, dht_temp
+void printDataCSV() {
+  // Read DHT sensor data
+  float humidity = dht.readHumidity();
+  float dhtTemp = dht.readTemperature(); // Celsius
+
+  // Print MPU6050 Data
+  Serial.print(accx);    Serial.print(",");
+  Serial.print(accy);    Serial.print(",");
+  Serial.print(accz);    Serial.print(",");
+  Serial.print(temp);    Serial.print(",");
+  Serial.print(gyrox);   Serial.print(",");
+  Serial.print(gyroy);   Serial.print(",");
+  Serial.print(gyroz);   Serial.print(",");
+  
+  // Print DHT Data (Checks if reading failed to avoid printing "nan")
+  if (isnan(humidity)) {
+    Serial.print("0.00");
+  } else {
+    Serial.print(humidity);
+  }
+  Serial.print(",");
+
+  if (isnan(dhtTemp)) {
+    Serial.print("0.01");
+  } else {
+    Serial.print(dhtTemp);
+  }
+
+  Serial.print(",");
+
+  if (gyroy > 20 || gyroy < -20) {
+    digitalWrite(BUZZER, HIGH);
+    
+    Serial.print("BUZZING");
+  } else {
+    digitalWrite(BUZZER, LOW);
+    
+    Serial.print("NOT BUZZING");
+  }
+  
+  // Newline to finish the CSV row
+  Serial.println();
 }
