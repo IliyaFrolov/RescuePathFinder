@@ -154,10 +154,12 @@ class FusionState:
         """
         grav = np.array([0.0, 0.0, GRAVITY])
         for _, row in new_rows.iterrows():
-            t  = float(row["time"]) / 1000.0   # ms → seconds
-            ax = float(row["ax"]) * GRAVITY
-            ay = float(row["ay"]) * GRAVITY
-            az = float(row["az"]) * GRAVITY
+            if (row['time'] == 'time'):
+                return
+            t  = float(row['time']) / 1000.0   # ms → seconds
+            ax = float(row['ax']) * GRAVITY
+            ay = float(row['ay']) * GRAVITY
+            az = float(row['az']) * GRAVITY
 
             if self.last_time is None:
                 dt = 1.0 / 100.0   # assume 100 Hz until we have two samples
@@ -166,9 +168,9 @@ class FusionState:
             self.last_time = t
 
             if self.use_gyro:
-                gx = np.radians(float(row["gx"]))
-                gy = np.radians(float(row["gy"]))
-                gz = np.radians(float(row["gz"]))
+                gx = np.radians(float(row['gx']))
+                gy = np.radians(float(row['gy']))
+                gz = np.radians(float(row['gz']))
                 q  = self.madgwick.update(gx, gy, gz, ax, ay, az, dt)
                 lin_acc = quat_rotate(q, np.array([ax, ay, az])) - grav
             else:
@@ -306,9 +308,9 @@ def make_app(csv_path: str, args) -> dash.Dash:
                             value=args.poll_ms,
                             marks={50:"50ms",500:"500ms",
                                    1000:"1s",2000:"2s"},
-                            tooltip={"placement":"bottom"},
-                            style={"width":"260px","display":"inline-block",
-                                   "verticalAlign":"middle"})],
+                            tooltip={"placement":"bottom"})],
+                            #style={"width":"260px","display":"inline-block",
+                                  # "verticalAlign":"middle"})],
                 style={"display":"inline-flex","alignItems":"center","gap":"8px"}
             ),
         ], style={"padding":"8px 16px","display":"flex",
