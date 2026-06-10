@@ -2,6 +2,7 @@ import threading
 import time
 import csv
 import os
+from datetime import datetime
 
 from ReadIMU.imu import parse_line, print_sensor_data
 from ReadCamera.camera import stream_mjpeg
@@ -18,7 +19,7 @@ AUTH             = None
 
 ASSESS_INTERVAL  = 2.0   # seconds between route assessments
 
-IMU_OUTPUTS_FILE_PATH = "outputs/imu_outputs.csv"
+IMU_OUTPUTS_FILE_PATH = "/home/bae/outputs/imu_outputs.csv"
 # ─────────────────────────────────────────────────────────────────────────────
 
 # Shared state — all threads write here, assessor reads from here
@@ -89,7 +90,7 @@ def start_assessor_thread(stop_event: threading.Event) -> threading.Thread:
 
 def write_imu_to_csv(imu_data):
     motion_data = {
-    "timestamp" : imu_data.timestamp,
+    "timestamp" : date_string_to_milliseconds(imu_data.timestamp),
     "accel_x" : imu_data.accel_x, 
     "accel_y" : imu_data.accel_y, 
     "accel_z": imu_data.accel_z, 
@@ -121,8 +122,32 @@ def write_imu_to_csv(imu_data):
         
         # Write data rows
         writer.writerow(motion_data)
+    
+def date_string_to_milliseconds(date_str, date_format="%H:%M:%S.%f"):
+    """
+    Convert a date string to milliseconds since the Unix epoch.
+
+    Parameters:
+    - date_str (str): The date string to convert.
+    - date_format (str, optional): The format of the date string. Default is '%Y-%m-%d %H:%M:%S'.
+
+    Returns:
+    - int: Milliseconds since Unix epoch.
+    """
+    try:
+        # Convert string to datetime object
+        dt_obj = datetime.strptime(date_str, date_format)
+        # Convert datetime to milliseconds since epoch
+        milliseconds = int(dt_obj.timestamp() * 1000)
+        return milliseconds
+    except ValueError as e:
+        raise ValueError(f"Error parsing date string: {e}")
 
 if __name__ == "__main__":
+    if (os.path.exists(IMU_OUTPUTS_FILE_PATH)): # Remove outputs file at the start of script
+        print("Removing imu outputs file")
+        os.remove(IMU_OUTPUTS_FILE_PATH)
+        
     stop_event = threading.Event()
 
     print("=== Drone sensor system starting ===\n")
