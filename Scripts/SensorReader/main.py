@@ -86,20 +86,38 @@ def start_assessor_thread(stop_event: threading.Event) -> threading.Thread:
     t.start()
     return t
 
-def write_imu_to_csv():
-    imu_data = latest["imu"]
+def write_imu_to_csv(imu_data):
+    motion_data = [
+        imu_data.timestamp,
+        imu_data.accel_x, 
+        imu_data.accel_y, 
+        imu_data.accel_z, 
+        imu_data.gyro_x, 
+        imu_data.gyro_y, 
+        imu_data.gyro_,
+        imu_data.temp_c
+        ]
     
     # Writing to CSV
     with open(IMU_OUTPUTS_FILE_PATH, mode='w', newline='', encoding='utf-8') as file:
         # Define CSV field names based on keys of the first dict
-        fieldnames = ["accel_x", "accel_y", "accel_z", "gyro_x", "gyro_y", "gyro_z"]
+        fieldnames = [
+            "timestamp", 
+            "accel_x", 
+            "accel_y", 
+            "accel_z", 
+            "gyro_x", 
+            "gyro_y", 
+            "gyro_z",
+            "temp_c"
+            ]
         writer = csv.DictWriter(file, fieldnames=fieldnames)
 
         # Write header row
         writer.writeheader()
         
         # Write data rows
-        for row in data:
+        for row in motion_data:
             writer.writerow(row)
 
 if __name__ == "__main__":
@@ -120,6 +138,7 @@ if __name__ == "__main__":
             camera = latest["camera"]
             
             if imu and camera:
+                write_imu_to_csv(imu)
                 print(f"[Main] Temp: {imu.temp_c:.1f}°C | Objects: {camera['object_count']}")
 
             time.sleep(1)
