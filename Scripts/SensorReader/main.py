@@ -1,6 +1,7 @@
 import threading
 import time
 import csv
+import os
 
 from ReadIMU.imu import parse_line, print_sensor_data
 from ReadCamera.camera import stream_mjpeg
@@ -29,7 +30,7 @@ latest = {
 
 def on_new_imu(data):
     """Called each time a new IMU reading arrives. Add extra IMU logic here."""
-    print_sensor_data(data)
+    # print_sensor_data(data)
 
 
 def start_imu_thread(stop_event: threading.Event) -> threading.Thread:
@@ -87,19 +88,20 @@ def start_assessor_thread(stop_event: threading.Event) -> threading.Thread:
     return t
 
 def write_imu_to_csv(imu_data):
-    motion_data = [
-        imu_data.timestamp,
-        imu_data.accel_x, 
-        imu_data.accel_y, 
-        imu_data.accel_z, 
-        imu_data.gyro_x, 
-        imu_data.gyro_y, 
-        imu_data.gyro_,
-        imu_data.temp_c
-        ]
+    motion_data = {
+    "timestamp" : imu_data.timestamp,
+    "accel_x" : imu_data.accel_x, 
+    "accel_y" : imu_data.accel_y, 
+    "accel_z": imu_data.accel_z, 
+    "gyro_x": imu_data.gyro_x, 
+    "gyro_y": imu_data.gyro_y, 
+    "gyro_z": imu_data.gyro_z,
+    "temp_c": imu_data.temp_c
+    }
     
+    file_exists = os.path.exists(IMU_OUTPUTS_FILE_PATH)
     # Writing to CSV
-    with open(IMU_OUTPUTS_FILE_PATH, mode='w', newline='', encoding='utf-8') as file:
+    with open(IMU_OUTPUTS_FILE_PATH, mode='a', newline='', encoding='utf-8') as file:
         # Define CSV field names based on keys of the first dict
         fieldnames = [
             "timestamp", 
@@ -113,12 +115,12 @@ def write_imu_to_csv(imu_data):
             ]
         writer = csv.DictWriter(file, fieldnames=fieldnames)
 
-        # Write header row
-        writer.writeheader()
+        if not file_exists:
+            # Write header row
+            writer.writeheader()
         
         # Write data rows
-        for row in motion_data:
-            writer.writerow(row)
+        writer.writerow(motion_data)
 
 if __name__ == "__main__":
     stop_event = threading.Event()
